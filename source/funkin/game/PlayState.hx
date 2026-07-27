@@ -194,6 +194,12 @@ class PlayState extends MusicBeatState
 	public var camFollow:FlxObject;
 
 	/**
+	 * Point defining the camera follow offset.
+	 * Used for the "Camera Movement" event.
+	 */
+	public var cameraFocusOffset:FlxPoint;
+
+	/**
 	 * Previous cam follow.
 	 */
 	private static var smoothTransitionData:PlayStateTransitionData;
@@ -732,6 +738,8 @@ class PlayState extends MusicBeatState
 		camFollow = new FlxObject(0, 0, 2, 2);
 		add(camFollow);
 
+		cameraFocusOffset = FlxPoint.get();
+
 		if (SONG.stage == null || SONG.stage.trim() == "") SONG.stage = Flags.DEFAULT_STAGE;
 		add(stage = new Stage(SONG.stage));
 
@@ -1113,6 +1121,8 @@ class PlayState extends MusicBeatState
 			stage.destroySilently();
 			remove(stage, true);
 		}
+
+		cameraFocusOffset.put();
 
 		scripts = FlxDestroyUtil.destroy(scripts);
 
@@ -1501,6 +1511,8 @@ class PlayState extends MusicBeatState
 
 	public function moveCamera() if (strumLines.members[curCameraTarget] != null) {
 		var data:CamPosData = getStrumlineCamPos(curCameraTarget);
+		data.pos.add(cameraFocusOffset.x, cameraFocusOffset.y);
+
 		if (data.amount > 0) {
 			var event = gameAndCharsEvent("onCameraMove", EventManager.get(CamMoveEvent).recycle(data.pos, strumLines.members[curCameraTarget], data.amount));
 			if (!event.cancelled)
@@ -1584,6 +1596,9 @@ class PlayState extends MusicBeatState
 				}
 
 				curCameraTarget = event.params[0];
+
+				cameraFocusOffset.set(event.params[5], event.params[6]);
+
 				moveCamera();
 
 				if (strumLines.members[curCameraTarget] != null) {
@@ -2033,10 +2048,13 @@ class PlayState extends MusicBeatState
 
 	public function displayRating(myRating:String, ?evt:NoteHitEvent):Void 
 	{
-		var event:RatingsShowEvent = EventManager.get(RatingsShowEvent).recycle(comboGroup.recycleLoop(FlxSprite), null, null, null, null, 0.7, true, "game/score/", "", 550, FlxPoint.get(FlxG.random.int(0, 10), FlxG.random.int(140, 175)), 0.2, (Conductor.crochet * 0.001), true, false, false, true, null, FlxPoint.get(comboGroup.x + -40, comboGroup.y + -60), true, myRating);
+		var event:RatingsShowEvent = EventManager.get(RatingsShowEvent).recycle(comboGroup.recycleLoop(FlxSprite), null, null, null, null, 0.7, true, "game/score/", "", 550, FlxPoint.get(FlxG.random.int(0, 10), FlxG.random.int(140, 175)), 0.2, (Conductor.crochet * 0.001), true, false, false, true, null, FlxPoint.get(comboGroup.x + -40, comboGroup.y + -60), true, myRating, null);
 		gameAndCharsEvent("onRatingsShown", event);
 
-		if (event.cancelled || !event.displayRating) return event.ratingSprite.kill(); // TODO: Find a better way for this?
+		if (event.cancelled || !event.displayRating) { // TODO: Find a better way for this?
+			event.ratingSprite.kill();
+			return;
+		}
 
 		var hasEvent:Bool = evt != null;
 
@@ -2056,8 +2074,8 @@ class PlayState extends MusicBeatState
 		rating.antialiasing = hasEvent && evt.ratingAntialiasing != null ? evt.ratingAntialiasing : event.ratingAntialiasing;
 		rating.updateHitbox();
 
-		if (event.tween) {
-			FlxTween.tween(rating, {alpha: 0}, event.tweenDuration, {
+		if (event.playTween) {
+			event.tween = FlxTween.tween(rating, {alpha: 0}, event.tweenDuration, {
 				startDelay: event.startDelay,
 				onComplete: function(tween:FlxTween) {
 					rating.kill();
@@ -2072,10 +2090,13 @@ class PlayState extends MusicBeatState
 
 	public function displayCombo(?evt:NoteHitEvent):Void {
 		if (minDigitDisplay >= 0 && (combo == 0 || combo >= minDigitDisplay)) {
-			var event:RatingsShowEvent = EventManager.get(RatingsShowEvent).recycle(null, null, comboGroup.recycleLoop(FlxSprite), null, null, 0.7, true, "game/score/", "", 600, FlxPoint.get(FlxG.random.int(0, 10), 150), 0.2, (Conductor.crochet * 0.001), false, false, evt != null && evt.displayCombo != null ? evt.displayCombo : defaultDisplayCombo, true, null, FlxPoint.get(comboGroup.x, comboGroup.y), true, null);
+			var event:RatingsShowEvent = EventManager.get(RatingsShowEvent).recycle(null, null, comboGroup.recycleLoop(FlxSprite), null, null, 0.7, true, "game/score/", "", 600, FlxPoint.get(FlxG.random.int(0, 10), 150), 0.2, (Conductor.crochet * 0.001), false, false, evt != null && evt.displayCombo != null ? evt.displayCombo : defaultDisplayCombo, true, null, FlxPoint.get(comboGroup.x, comboGroup.y), true, null, null);
 			gameAndCharsEvent("onRatingsShown", event);
 
-			if (event.cancelled || !event.displayCombo) return event.comboSprite.kill(); // TODO: Find a better way for this?
+			if (event.cancelled || !event.displayCombo) { // TODO: Find a better way for this?
+				event.comboSprite.kill();
+				return;
+			}
 
 			var hasEvent:Bool = evt != null;
 
@@ -2095,8 +2116,8 @@ class PlayState extends MusicBeatState
 			comboSpr.antialiasing = hasEvent && evt.ratingAntialiasing != null ? evt.ratingAntialiasing : event.ratingAntialiasing;
 			comboSpr.updateHitbox();
 
-			if (event.tween) {
-				FlxTween.tween(comboSpr, {alpha: 0}, event.tweenDuration, {
+			if (event.playTween) {
+				event.tween = FlxTween.tween(comboSpr, {alpha: 0}, event.tweenDuration, {
 					onComplete: function(tween:FlxTween) {
 						comboSpr.kill();
 					},
@@ -2115,7 +2136,7 @@ class PlayState extends MusicBeatState
 			var separatedScore:String = Std.string(combo).addZeros(3);
 			for (i in 0...separatedScore.length)
 			{
-				var event:RatingsShowEvent = EventManager.get(RatingsShowEvent).recycle(null, comboGroup.recycleLoop(FlxSprite), null, 0.5, true, null, null, "game/score/", "", FlxG.random.int(200, 300), FlxPoint.get(FlxG.random.float(-5, 5), FlxG.random.int(140, 160)), 0.2, (Conductor.crochet * 0.002), false, true, false, true, 43, FlxPoint.get(), true, null);
+				var event:RatingsShowEvent = EventManager.get(RatingsShowEvent).recycle(null, comboGroup.recycleLoop(FlxSprite), null, 0.5, true, null, null, "game/score/", "", FlxG.random.int(200, 300), FlxPoint.get(FlxG.random.float(-5, 5), FlxG.random.int(140, 160)), 0.2, (Conductor.crochet * 0.002), false, true, false, true, 43, FlxPoint.get(comboGroup.x - 90, comboGroup.y + 80), true, null, null);
 				gameAndCharsEvent("onRatingsShown", event);
 
 				if (event.cancelled || !event.displayNumbers) { // TODO: Find a better way for this?
@@ -2131,7 +2152,7 @@ class PlayState extends MusicBeatState
 				var numScale:Float = hasEvent && evt.numScale != null ? evt.numScale : event.numScale;
 
 				var numScore:FlxSprite = event.numberSprite.loadAnimatedGraphic(Paths.image('${pre}num${separatedScore.charAt(i)}${suf}'));
-				event.position.set(comboGroup.x + (event.numSpacing * i) - 90, comboGroup.y + 80); // TODO: Maybe find a better way to do this?
+				event.position.x += event.numSpacing * i;
 				if (event.resetSprite) {
 					CoolUtil.resetSprite(numScore, event.position.x, event.position.y);
 				}
@@ -2143,8 +2164,8 @@ class PlayState extends MusicBeatState
 				numScore.velocity.y -= event.velocity.y;
 				numScore.velocity.x = event.velocity.x;
 
-				if (event.tween) {
-					FlxTween.tween(numScore, {alpha: 0}, event.tweenDuration, {
+				if (event.playTween) {
+					event.tween = FlxTween.tween(numScore, {alpha: 0}, event.tweenDuration, {
 						onComplete: function(tween:FlxTween) {
 							numScore.kill();
 						},
