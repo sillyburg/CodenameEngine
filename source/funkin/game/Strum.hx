@@ -11,6 +11,11 @@ class Strum extends FlxSprite {
 	**/
 	public var extra:Map<String, Dynamic> = [];
 
+	/*
+	 * Animation prefix used for the noteskin.
+	 */
+	public var animPrefix:String;
+
 	/**
 	 * Which animation suffix on characters that should be used when hitting notes.
 	 */
@@ -137,6 +142,26 @@ class Strum extends FlxSprite {
 		if (note != null && note.noteAngle != null) return note.noteAngle;
 		if (noteAngle != null) return noteAngle;
 		return angle;
+	}
+
+	/**
+	 * Sets the noteskin of the strum.
+	 * @param sprite The sprite's path
+	**/
+	public function setNoteskin(sprite:String)
+	{
+		babyArrow.frames = Paths.getFrames(sprite);
+		babyArrow.animation.addByPrefix('green', 'arrowUP');
+		babyArrow.animation.addByPrefix('blue', 'arrowDOWN');
+		babyArrow.animation.addByPrefix('purple', 'arrowLEFT');
+		babyArrow.animation.addByPrefix('red', 'arrowRIGHT');
+
+		babyArrow.antialiasing = true;
+		babyArrow.setGraphicSize(Std.int((babyArrow.width * Flags.DEFAULT_NOTE_SCALE) * strumScale));
+
+		babyArrow.animation.addByPrefix('static', 'arrow${animPrefix.toUpperCase()}');
+		babyArrow.animation.addByPrefix('pressed', '${animPrefix} press', 24, false);
+		babyArrow.animation.addByPrefix('confirm', '${animPrefix} confirm', 24, false);
 	}
 
 	public override function update(elapsed:Float) {
