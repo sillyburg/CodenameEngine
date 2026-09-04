@@ -150,18 +150,15 @@ class Strum extends FlxSprite {
 	**/
 	public function setNoteskin(sprite:String)
 	{
-		babyArrow.frames = Paths.getFrames(sprite);
-		babyArrow.animation.addByPrefix('green', 'arrowUP');
-		babyArrow.animation.addByPrefix('blue', 'arrowDOWN');
-		babyArrow.animation.addByPrefix('purple', 'arrowLEFT');
-		babyArrow.animation.addByPrefix('red', 'arrowRIGHT');
+		frames = Paths.getFrames(sprite);
+		animation.addByPrefix('green', 'arrowUP');
+		animation.addByPrefix('blue', 'arrowDOWN');
+		animation.addByPrefix('purple', 'arrowLEFT');
+		animation.addByPrefix('red', 'arrowRIGHT');
 
-		babyArrow.antialiasing = true;
-		babyArrow.setGraphicSize(Std.int((babyArrow.width * Flags.DEFAULT_NOTE_SCALE) * strumScale));
-
-		babyArrow.animation.addByPrefix('static', 'arrow${animPrefix.toUpperCase()}');
-		babyArrow.animation.addByPrefix('pressed', '${animPrefix} press', 24, false);
-		babyArrow.animation.addByPrefix('confirm', '${animPrefix} confirm', 24, false);
+		animation.addByPrefix('static', 'arrow${animPrefix.toUpperCase()}');
+		animation.addByPrefix('pressed', '${animPrefix} press', 24, false);
+		animation.addByPrefix('confirm', '${animPrefix} confirm', 24, false);
 	}
 
 	public override function update(elapsed:Float) {

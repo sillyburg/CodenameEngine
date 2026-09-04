@@ -398,6 +398,9 @@ class StrumLine extends FlxTypedGroup<Strum> {
 		if (!event.cancelled) {
 			babyArrow.animPrefix = event.animPrefix;
 			babyArrow.setNoteskin(event.sprite);
+
+			antialiasing = true;
+			setGraphicSize(Std.int((width * Flags.DEFAULT_NOTE_SCALE) * strumScale));
 		}
 
 		babyArrow.cpu = cpu;
